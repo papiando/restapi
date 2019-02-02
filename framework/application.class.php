@@ -63,8 +63,6 @@ class Application {
 	}
 	
 	public static function run($uri) {
-		// Log entry that Application was started
-		new Log(array('name'=>"Application::run",'title'=>"Start application",'description'=>"Application was started with '{$uri}'"));
 		// Get application defaults
 		self::$_defaults = Configuration::getDefaults();
 		// Declare the router
@@ -75,29 +73,23 @@ class Application {
 			self::$_params = new \stdClass();
 		self::$_params->base_url = __BASE__;
 		self::$_params->generator = "Cubo CMS by Papiando";
-		self::$_params->language = self::$_router->getLanguage();
+		self::$_params->generator_url = "https://cubo-cms.com";
 		self::$_params->provider_name = "Papiando Riba Internet";
 		self::$_params->provider_url = "https://papiando.com";
 		self::$_params->site_name = Configuration::get('site_name');
-		self::$_params->template = self::$_router->getTemplate();
-		self::$_params->theme = self::$_router->getTheme();
 		self::$_params->title = Configuration::get('site_name');
 		self::$_params->uri = self::$_params->base_url.$_SERVER['REQUEST_URI'];
 		self::$_params->url = self::$_params->base_url.current(explode('?',$_SERVER['REQUEST_URI']));
-		// Retrieve layout
+		// Retrieve route
 		$route = self::$_router->getRoute();
-		if($route == Configuration::get('admin_route') && !Session::exists('user')) {
-			Session::setMessage(array('alert'=>'info','icon'=>'exclamation','text'=>"This page requires login access"));
-			Session::set('login_redirect',$uri);
-			Router::redirect('/user?method=login');
-		}
 		// Preset controller's class and method
 		$class = __CUBO__.'\\'.ucfirst(self::$_router->getController()).'Controller';
-		$method = strtolower(str_replace(DS,'_',self::$_router->getAdmin()).self::$_router->getMethod());
+		$method = strtolower(self::$_router->getRoute().self::$_router->getMethod());
 		// Call the controller's method
 		self::$_controller = new $class();
 		if(method_exists($class,$method)) {
 			self::$_controller->$method();
+			die();
 			self::$_data = self::$_controller->getData();
 			$view = new View();
 			if(self::$_router->getController() == 'image' && $method == 'default') {
@@ -125,9 +117,6 @@ class Application {
 	public function __construct() {
 		// Connect to database
 		self::$_database || self::$_database = new Database(Configuration::get('database'));
-		$query = self::$_database->select('*')->from('country');
-		$countries = self::$_database->load();
-		show($countries);
 		// Run the application and pass URI
 		self::run($_SERVER['REQUEST_URI']);
 	}
