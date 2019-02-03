@@ -105,7 +105,7 @@ class Application {
 		// Call the controller's method
 		self::$_controller = new $controller();
 		if(method_exists($controller,$method)) {
-			self::$_controller->$method(self::$_router->getParam('name'));
+			self::$_controller->$method(self::$_router->getParam('name',self::$_router->getDefault(self::$_router->getController())));
 			self::$_data = self::$_controller->getData();
 			// Call the view's method
 			self::$_view = new $view();
