@@ -15,78 +15,86 @@ namespace Cubo;
 defined('__CUBO__') || new \Exception("No use starting a class without an include");
 
 class Database {
-	private static $connection;
-	protected static $dbh = null;
-	protected static $error = 0;
-	private static $className = null;
-	protected static $query;
-	protected static $method;
+	private $connection;
+	private $dbh = null;
+	private $className = null;
+	protected $error = 0;
+	protected $query;
+	protected $method;
 	
 	public function __construct($options) {
-		self::$query = new \stdClass();
-		self::$connection = (object)$options;
-		return self::connect();
+		$this->query = new \stdClass();
+		$this->connection = (object)$options;
+		return $this->connect();
 	}
 	
 	public function __destruct() {
-		self::connected() && self::disconnect();
+		$this->connected() && $this->disconnect();
 	}
 	
-	public static function connect() {
-		if(empty(self::$connection->dsn)) {
-			throw new \Exception("[".get_class($this)."] [001] No database connection string");
+	public function connect() {
+		if(empty($this->connection->dsn) || empty($this->connection->user) || empty($this->connection->password)) {
+			throw new \Exception("[".get_class($this)."] [001] No valid database connection string");
 			return null;
 		} else {
 			try {
-				!empty(self::$connection->dsn) && !empty(self::$connection->user) && !empty(self::$connection->password) && self::$dbh = new \PDO(self::$connection->dsn,self::$connection->user,self::$connection->password,array(\PDO::ATTR_ERRMODE=>\PDO::ERRMODE_SILENT));
+				!empty($this->connection->dsn) && !empty($this->connection->user) && !empty($this->connection->password) && $this->dbh = new \PDO($this->connection->dsn,$this->connection->user,$this->connection->password,array(\PDO::ATTR_ERRMODE=>\PDO::ERRMODE_SILENT));
+				// TODO: $log = new Log(['result'=>"success",'message'=>"Open connection to database"]);
 			} catch(\PDOException $e) {
-				self::$error = $e->getMessage();
+				$this->error = $e->getMessage();
 			}
 		}
-		return self::connected();
+		return $this->connected();
 	}
 	
-	public static function error() {
-		return self::$error;
+	public function error() {
+		return $this->error;
 	}
 	
-	public static function connected() {
-		return self::$dbh;
+	public function connected() {
+		return $this->dbh;
 	}
 	
-	public static function disconnected() {
-		return !self::connected();
+	public function disconnected() {
+		return !$this->connected();
 	}
 	
-	public static function disconnect() {
-		self::$dbh = null;
+	public function disconnect() {
+		$this->dbh = null;
 	}
 	
-	public static function query($query = null) {
+	public function query($query = null) {
 		if(!is_string($query)) {
-			switch(self::$method) {
+			switch($this->method) {
+				case 'insert':
+					$query = "INSERT INTO ".self::quote($this->query->insert);
+					isset($this->query->columns) && $query .= ' ('.self::quote($this->query->columns).')';
+					isset($this->query->values) && $query .= " VALUES (".self::comma($this->query->values).')';
+					break;
 				case 'select':
-					$query = "SELECT ".self::$query->select;
-					$query .= isset(self::$query->from) ? " FROM ".self::quote(self::$query->from) : "";
-					$query .= isset(self::$query->innerjoin) ? " INNER JOIN ".self::quote(self::$query->innerjoin) : "";
-					$query .= isset(self::$query->on) ? " ON ".self::quote(self::$query->on)."=".self::quote(self::$query->innerjoin).".`id`" : "";
-					$query .= isset(self::$query->where) ? " WHERE ".self::$query->where : "";
-					$query .= isset(self::$query->group) ? " GROUP BY ".self::$query->group : "";
-					$query .= isset(self::$query->having) ? " HAVING ".self::$query->having : "";
-					$query .= isset(self::$query->order) ? " ORDER BY ".self::$query->order : "";
-					$query .= isset(self::$query->limit) ? " LIMIT ".self::$query->limit : "";
-					$query .= isset(self::$query->offset) ? " OFFSET ".self::$query->offset : "";
+					$query = "SELECT ".$this->query->select;
+					$query .= isset($this->query->from) ? " FROM ".self::quote($this->query->from) : "";
+					$query .= isset($this->query->innerjoin) ? " INNER JOIN ".self::quote($this->query->innerjoin) : "";
+					$query .= isset($this->query->on) ? " ON ".self::quote($this->query->on)."=".self::quote($this->query->innerjoin).".`id`" : "";
+					$query .= isset($this->query->where) ? " WHERE ".$this->query->where : "";
+					$query .= isset($this->query->group) ? " GROUP BY ".$this->query->group : "";
+					$query .= isset($this->query->having) ? " HAVING ".$this->query->having : "";
+					$query .= isset($this->query->order) ? " ORDER BY ".$this->query->order : "";
+					$query .= isset($this->query->limit) ? " LIMIT ".$this->query->limit : "";
+					$query .= isset($this->query->offset) ? " OFFSET ".$this->query->offset : "";
 					break;
 				case 'update':
-					$query = "UPDATE ".self::string(self::$query['update']);
-					$query .= isset(self::$query['set']) ? " SET ".self::comma(self::$query['set']) : "";
-					$query .= isset(self::$query['where']) ? " WHERE ".self::$query['where'] : "";
+					$query = "UPDATE ".self::quote($this->query->update);
+					$query .= isset($this->query['set']) ? " SET ".self::comma($this->query['set']) : "";
+					isset($this->query->columns) && $query .= ' ('.self::quote($this->query->columns).')';
+					isset($this->query->values) && $query .= " VALUES (".self::comma($this->query->values).')';
+					$query .= isset($this->query['where']) ? " WHERE ".$this->query['where'] : "";
 					break;
 				default:
 					$query = "";
 			}
-			self::$method = null;
-			self::$query = new \stdClass();
+			$this->method = null;
+			$this->query = new \stdClass();
 		}
 		return $query;
 	}
@@ -96,10 +104,10 @@ class Database {
 			$list = $query;
 			$query = null;
 		}
-		$sth = self::$dbh->prepare(empty($query) ? self::query() : $query);
+		$sth = $this->dbh->prepare(empty($query) ? $this->query() : $query);
 		$sth->execute($list);
-		$result = $sth->fetchAll(\PDO::FETCH_CLASS|\PDO::FETCH_PROPS_LATE,'\\'.__NAMESPACE__.'\\'.self::$className);
-		self::$className = null;
+		$result = $sth->fetchAll(\PDO::FETCH_CLASS|\PDO::FETCH_PROPS_LATE,'\\'.__NAMESPACE__.'\\'.$this->className);
+		$this->className = null;
 		return $result;
 	}
 	
@@ -108,11 +116,11 @@ class Database {
 			$list = $query;
 			$query = null;
 		}
-		$sth = self::$dbh->prepare(empty($query) ? self::query() : $query);
+		$sth = $this->dbh->prepare(empty($query) ? $this->query() : $query);
 		$sth->execute($list);
-		$sth->setFetchMode(\PDO::FETCH_CLASS|\PDO::FETCH_PROPS_LATE,'\\'.__NAMESPACE__.'\\'.self::$className);
+		$sth->setFetchMode(\PDO::FETCH_CLASS|\PDO::FETCH_PROPS_LATE,'\\'.__NAMESPACE__.'\\'.$this->className);
 		$result = $sth->fetch();
-		self::$className = null;
+		$this->className = null;
 		return $result;
 	}
 	
@@ -121,11 +129,11 @@ class Database {
 			$list = $query;
 			$query = null;
 		}
-		$sth = self::$dbh->prepare(empty($query) ? self::query() : $query);
+		$sth = $this->dbh->prepare(empty($query) ? $this->query() : $query);
 		$sth->execute($list);
 		$sth->setFetchMode(\PDO::FETCH_ASSOC);
 		$result = $sth->fetchAll();
-		self::$className = null;
+		$this->className = null;
 		return $result;
 	}
 	
@@ -134,11 +142,11 @@ class Database {
 			$list = $query;
 			$query = null;
 		}
-		$sth = self::$dbh->prepare(empty($query) ? self::query() : $query);
+		$sth = $this->dbh->prepare(empty($query) ? $this->query() : $query);
 		$sth->execute($list);
 		$sth->setFetchMode(\PDO::FETCH_ASSOC);
 		$result = $sth->fetch();
-		self::$className = null;
+		$this->className = null;
 		return $result;
 	}
 	
@@ -147,81 +155,110 @@ class Database {
 			$list = $query;
 			$query = null;
 		}
-		$sth = self::$dbh->prepare(empty($query) ? self::query() : $query);
+		$sth = $this->dbh->prepare(empty($query) ? $this->query() : $query);
 		$result = $sth->execute($list);
-		self::$className = null;
+		$this->className = null;
 		return $result;
 	}
 	
 	public function id() {
-		return self::$dbh->lastInsertId();
+		return $this->dbh->lastInsertId();
 	}
 	
 	public function columns($fields) {
-		self::$query->columns = $fields;
+		$this->query->columns = $fields;
+		return $this;
+	}
+	
+	public function delete() {
+		$this->method = 'delete';
 		return $this;
 	}
 	
 	public function from($table) {
-		self::$query->from = $table;
-		self::$className = $table;
+		$this->query->from = $table;
+		$this->className = $table;
 		return $this;
 	}
 	
 	public function group($fields) {
-		self::$query->group = $fields;
+		$this->query->group = $fields;
 		return $this;
 	}
 	
 	public function having($conditions) {
-		self::$query->having = $conditions;
+		$this->query->having = $conditions;
 		return $this;
 	}
 	
 	public function innerjoin($table) {
-		self::$query->innerjoin = $table;
+		$this->query->innerjoin = $table;
+		return $this;
+	}
+	
+	public function insert($table) {
+		$this->method = "insert";
+		$this->query->insert = $table;
 		return $this;
 	}
 	
 	public function join($table,$id) {
-		self::$query->innerjoin = $table;
-		self::$query->on = $id;
+		$this->query->innerjoin = $table;
+		$this->query->on = $id;
 		return $this;
 	}
 	
 	public function limit($num) {
-		self::$query->limit = $num;
+		$this->query->limit = $num;
 		return $this;
 	}
 	
 	public function offset($num) {
-		self::$query->offset = $num;
+		$this->query->offset = $num;
 		return $this;
 	}
 	
 	public function on($id) {
-		self::$query->on = $id;
+		$this->query->on = $id;
 		return $this;
 	}
 	
 	public function order($sort) {
-		self::$query->order = $sort;
+		$this->query->order = $sort;
 		return $this;
 	}
 	
 	public function select($fields) {
-		self::$method = 'select';
-		self::$query->select = $fields;
+		$this->method = 'select';
+		$this->query->select = $fields;
+		return $this;
+	}
+	
+	public function update($table) {
+		$this->method = 'update';
+		$this->query->update = $table;
 		return $this;
 	}
 	
 	public function values($fields) {
-		self::$query->values = $fields;
+		$this->query->values = $fields;
 		return $this;
 	}
 	
 	public function where($conditions) {
-		self::$query->where = $conditions;
+		$this->query->where = $conditions;
+		return $this;
+	}
+	
+	public function data($data) {
+		$json = json_decode($data,true);
+		if (json_last_error() === JSON_ERROR_NONE) {
+			$this->query->columns = array_keys($json);
+			$this->query->values = array_values($json);
+			// TODO: UPDATE SET statement
+		} else {
+			throw new \Exception("[".get_class($this)."] [011] No JSON data provided");
+		}
 		return $this;
 	}
 	
@@ -261,7 +298,7 @@ class Database {
 				$result .= self::string($item);
 			}
 		} else {
-			$result = self::$dbh->quote($object);
+			$result = $this->dbh->quote($object);
 		}
 		return $result;
 	}
