@@ -19,15 +19,18 @@ spl_autoload_register(function($class) {
 	$class = basename(str_replace('\\','/',$class));
 	// Set path names
 	$frameworkPath = __ROOT__.DS.'framework'.DS.strtolower($class).'.class.php';
-	$controllerPath = __ROOT__.DS.'controller'.DS.str_replace('controller','',strtolower($class)).'.controller.php';
 	$modelPath = __ROOT__.DS.'model'.DS.strtolower($class).'.model.php';
+	$viewPath = __ROOT__.DS.'view'.DS.str_replace('view','',strtolower($class)).'.view.php';
+	$controllerPath = __ROOT__.DS.'controller'.DS.str_replace('controller','',strtolower($class)).'.controller.php';
 	// Include if file exists
 	if(file_exists($frameworkPath))
 		require_once($frameworkPath);
-	elseif(file_exists($controllerPath) && strpos($class,'Controller') > 0)
-		require_once($controllerPath);
 	elseif(file_exists($modelPath))
 		require_once($modelPath);
+	elseif(file_exists($viewPath) && strpos($class,'View') > 0)
+		require_once($viewPath);
+	elseif(file_exists($controllerPath) && strpos($class,'Controller') > 0)
+		require_once($controllerPath);
 	else
 		throw new \Exception("Failed to include class '{$class}'");
 });

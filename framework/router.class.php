@@ -26,8 +26,8 @@ class Router {
 		return $this->_params;
 	}
 	
-	public function getParam($param,$value = null) {
-		return $this->_params->$param ?? $this->getDefault($param) ?? $value;
+	public function getParam($param,$default = null) {
+		return $this->_params->$param ?? $this->getDefault($param) ?? $default;
 	}
 	
 	public function setParam($param,$value) {
@@ -42,20 +42,16 @@ class Router {
 		return $this->getParam('controller','article');
 	}
 	
+	public function getFormat() {
+		return $this->getParam('format','html');
+	}
+	
 	public function getMethod() {
 		return $this->getParam('method','default');
 	}
 	
 	public function getRoute() {
-		return $this->getParam('route','');
-	}
-	
-	public function getTemplate() {
-		return $this->getParam('template','default');
-	}
-	
-	public function getTheme() {
-		return $this->getParam('theme','default');
+		return $this->getParam('route');
 	}
 	
 	public static function redirect($location) {
@@ -78,7 +74,6 @@ class Router {
 				$this->_params->method = $key;
 		}
 		// Define accepted routes and preset to site
-		$this->_params->route = '';
 		$routes = array(Application::get('site_route','')=>'',Application::get('api_route','api')=>'api');
 		// Parse que rest of the query
 		if(count($path_parts)) {

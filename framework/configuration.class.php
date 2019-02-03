@@ -2,8 +2,8 @@
 /**
  * @application    Cubo RestAPI
  * @type           Framework
- * @class          Model
- * @description    The configuration framework loads settings, parameters and defaults from .config.php and provides these to the application
+ * @class          Configuration
+ * @description    The Configuration framework loads settings, parameters and defaults from .config.php and provides these to the application
  * @version        1.0.0
  * @date           2019-02-02
  * @author         Dan Barto
@@ -13,6 +13,15 @@
 namespace Cubo;
 
 defined('__CUBO__') || new \Exception("No use starting a class without an include");
+
+define('ROLE_ADMINISTRATOR',6);
+define('ROLE_ANY',-1);
+define('ROLE_AUTHOR',2);
+define('ROLE_EDITOR',3);
+define('ROLE_GUEST',0);
+define('ROLE_MANAGER',5);
+define('ROLE_PUBLISHER',4);
+define('ROLE_USER',1);
 
 class Configuration {
 	protected static $_settings = null;	// Holds settings read from .config.php

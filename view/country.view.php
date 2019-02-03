@@ -1,9 +1,9 @@
 <?php
 /**
  * @application    Cubo RestAPI
- * @type           Model
- * @class          Country
- * @description    The model of the country object
+ * @type           View
+ * @class          CountryView
+ * @description    The view that generates and prepares the output in different formats for the country object
  * @version        1.0.0
  * @date           2019-02-02
  * @author         Dan Barto
@@ -14,6 +14,6 @@ namespace Cubo;
 
 defined('__CUBO__') || new \Exception("No use starting a class without an include");
 
-class Country extends Model {
+class CountryView extends View {
 }
 ?>

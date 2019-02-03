@@ -2,8 +2,8 @@
 /**
  * @application    Cubo RestAPI
  * @type           Framework
- * @class          Model
- * @description    The application framework calls the router and runs the application using the indicated method and method defaults
+ * @class          Application
+ * @description    The Application framework calls the router and runs the application using the indicated method and method defaults
  * @version        1.0.0
  * @date           2019-02-02
  * @author         Dan Barto
@@ -17,6 +17,7 @@ defined('__CUBO__') || new \Exception("No use starting a class without an includ
 class Application {
 	protected static $_router;
 	protected static $_controller;
+	protected static $_view;
 	protected static $_defaults;
 	protected static $_data;
 	protected static $_params;
@@ -80,38 +81,27 @@ class Application {
 		self::$_params->title = Configuration::get('site_name');
 		self::$_params->uri = self::$_params->base_url.$_SERVER['REQUEST_URI'];
 		self::$_params->url = self::$_params->base_url.current(explode('?',$_SERVER['REQUEST_URI']));
-		// Retrieve route
-		$route = self::$_router->getRoute();
 		// Preset controller's class and method
-		$class = __CUBO__.'\\'.ucfirst(self::$_router->getController()).'Controller';
-		$method = strtolower(self::$_router->getRoute().self::$_router->getMethod());
+		$controller = __CUBO__.'\\'.ucfirst(self::$_router->getController()).'Controller';
+		$method = (empty(self::$_router->getRoute()) ? strtolower(self::$_router->getMethod()) : strtolower(self::$_router->getRoute()).ucfirst(self::$_router->getMethod()));
+		$view = __CUBO__.'\\'.ucfirst(self::$_router->getController()).'View';
+		$format = (empty(self::$_router->getRoute()) ? strtolower(self::$_router->getFormat()) : strtolower(self::$_router->getRoute()).ucfirst(self::$_router->getFormat()));
 		// Call the controller's method
-		self::$_controller = new $class();
-		if(method_exists($class,$method)) {
-			self::$_controller->$method();
-			die();
+		self::$_controller = new $controller();
+		if(method_exists($controller,$method)) {
+			self::$_controller->$method(self::$_router->getParam('name'));
 			self::$_data = self::$_controller->getData();
-			$view = new View();
-			if(self::$_router->getController() == 'image' && $method == 'default') {
-				$view->renderImage(self::$_controller->getData());
-				return;
+			self::$_view = new $view();
+			if(method_exists($view,$format)) {
+				$output = self::$_view->$format(self::$_controller->getData());
 			} else {
-				$html = $view->render(self::$_controller->getData());
+				throw new \Exception("Class '{$view}' does not have the '{$format}' method defined");
 			}
 		} else {
-			throw new \Exception("Class '{$class}' does not have the '{$method}' method defined");
-		}
-		// Render template
-		self::$_template = Template::get(self::$_params->template);
-		$html = self::$_template->render($html);
-		// Run plugins
-		$plugins = self::$_database->loadItems("SELECT * FROM `plugin` WHERE `status`='".STATUS_PUBLISHED."' ORDER BY `id` DESC");
-		foreach($plugins as $plugin) {
-			$class = __CUBO__.'\\'.ucfirst($plugin['name']).'Plugin';
-			$html = $class::run($html);
+			throw new \Exception("Class '{$controller}' does not have the '{$method}' method defined");
 		}
 		// Display output
-		echo $html;
+		echo $output;
 	}
 	
 	public function __construct() {

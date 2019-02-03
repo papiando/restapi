@@ -1,9 +1,9 @@
 <?php
 /**
  * @application    Cubo RestAPI
- * @type           Model
- * @class          Country
- * @description    The model of the country object
+ * @type           Controller
+ * @class          CountryController
+ * @description    The controller that holds the methods for the country object
  * @version        1.0.0
  * @date           2019-02-02
  * @author         Dan Barto
@@ -14,6 +14,7 @@ namespace Cubo;
 
 defined('__CUBO__') || new \Exception("No use starting a class without an include");
 
-class Country extends Model {
+class CountryController extends Controller {
+	protected $columns = "`code`,`name`";
 }
 ?>
