@@ -4,9 +4,9 @@
  * @type           Framework
  * @class          Router
  * @description    The Router framework analyses the URL and routes the visitor to the correct controller
- *                 and method
+ *                 and method; the router also includes language intelligence
  * @version        1.0.0
- * @date           2019-02-02
+ * @date           2019-02-03
  * @author         Dan Barto
  * @copyright      Copyright (C) 2017 - 2019 Papiando Riba Internet
  * @license        MIT License; see LICENSE.md
@@ -17,6 +17,13 @@ defined('__CUBO__') || new \Exception("No use starting a class without an includ
 
 class Router {
 	protected $_params;
+	protected $_language;
+	
+	// Constructor presets parameters and starts parsing the URI
+	public function __construct($uri) {
+		$this->_params = new \stdClass();
+		$this->parse($uri);
+	}
 	
 	public function getDefault($param) {
 		return Application::getDefault($param);
@@ -46,6 +53,10 @@ class Router {
 		return $this->getParam('format','html');
 	}
 	
+	public function getLanguage() {
+		return $this->getParam('language');
+	}
+	
 	public function getMethod() {
 		return $this->getParam('method','default');
 	}
@@ -54,17 +65,27 @@ class Router {
 		return $this->getParam('route');
 	}
 	
+	public function getTemplate() {
+		return $this->getParam('template','default');
+	}
+	
+	public function getTheme() {
+		return $this->getParam('theme','default');
+	}
+	
 	public static function redirect($location) {
 		exit(header("Location: {$location}"));
 	}
 	
-	public function __construct($uri) {
-		$this->_params = new \stdClass();
+	// Parse the given URI
+	public function parse($uri) {
 		$uri = urldecode(trim($uri,'/'));
 		// Split URI
 		$uri_parts = explode('?',$uri);
 		$uri_parts[] = '';
 		$path_parts = explode('/',$uri_parts[0]);
+		// Preset language
+		$this->_language = Language::get(LANGUAGE_UNDEFINED);
 		// Get parameters from query string
 		parse_str($uri_parts[1],$params);
 		$this->_params = (object)$params;
@@ -74,19 +95,24 @@ class Router {
 				$this->_params->method = $key;
 		}
 		// Define accepted routes and preset to site
-		$routes = array(Application::get('site_route','')=>'',Application::get('api_route','api')=>'api');
+		$routes = array(Application::get('site_route','')=>'',Application::get('admin_route','admin')=>'admin',Application::get('api_route','api')=>'api');
 		// Parse que rest of the query
 		if(count($path_parts)) {
 			$part = strtolower(current($path_parts));
-			// Get route if given
+			// Get route or language if given
 			if(in_array($part,array_keys($routes))) {
 				$this->_params->route = $routes[$part];
+				array_shift($path_parts);
+				$part = strtolower(current($path_parts));
+			} elseif(Language::exists($part)) {
+				$this->_language = Language::get($part);
+				$this->_params->language = $this->_language->{'iso639-1'};
 				array_shift($path_parts);
 				$part = strtolower(current($path_parts));
 			}
 			// Get controller if given
 			if($part) {
-				$this->_params->controller = $part;
+				$this->_params->controller = Text::retro($part,$this->_language);
 				array_shift($path_parts);
 				$part = strtolower(current($path_parts));
 			}
