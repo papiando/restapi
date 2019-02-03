@@ -1,11 +1,11 @@
 <?php
 /**
- * @application    Cubo RestAPI
+ * @application    Cubo CMS
  * @type           Framework
  * @class          Application
  * @description    The Application framework calls the router and runs the application using the indicated method and method defaults
- * @version        1.0.0
- * @date           2019-02-02
+ * @version        1.2.0
+ * @date           2019-02-03
  * @author         Dan Barto
  * @copyright      Copyright (C) 2017 - 2019 Papiando Riba Internet
  * @license        MIT License; see LICENSE.md

@@ -1,11 +1,11 @@
 <?php
 /**
- * @application    Cubo RestAPI
+ * @application    Cubo CMS
  * @type           Framework
  * @class          Router
  * @description    The Router framework analyses the URL and routes the visitor to the correct controller
  *                 and method; the router also includes language intelligence
- * @version        1.0.0
+ * @version        1.2.0
  * @date           2019-02-03
  * @author         Dan Barto
  * @copyright      Copyright (C) 2017 - 2019 Papiando Riba Internet
@@ -62,7 +62,7 @@ class Router {
 	}
 	
 	public function getRoute() {
-		return $this->getParam('route');
+		return $this->getParam('route','');
 	}
 	
 	public function getTemplate() {
