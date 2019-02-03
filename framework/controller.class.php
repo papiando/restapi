@@ -1,11 +1,11 @@
 <?php
 /**
- * @application    Cubo RestAPI
+ * @application    Cubo CMS
  * @type           Framework
  * @class          Controller
- * @description    All controllers are based on this framework; each controller
- *                 describes the allowed methods of an object
- * @version        1.0.0
+ * @description    All controllers are based on this framework;
+ *                 each controller describes the methods of an object
+ * @version        1.2.0
  * @date           2019-02-03
  * @author         Dan Barto
  * @copyright      Copyright (C) 2017 - 2019 Papiando Riba Internet
@@ -39,9 +39,38 @@ class Controller {
 		$this->_params = Application::getRouter()->getParams();
 	}
 	
+	// Standard method: view
+	public function view() {
+		// Generate output
+		if(self::getParam('id'))
+			$id = self::getParam('id');
+		elseif(self::getParam('name'))
+			$id = self::getParam('name');
+		else
+			$id = Application::getDefault(self::getParam('controller'));
+		$this->_data = $this->_model->get($id,"*",Session::requiresViewAccess());
+		if(empty($this->_data)) {
+			if(!Session::exists('user')) {
+				Session::setMessage(array('alert'=>'info','icon'=>'exclamation','text'=>"{$this->class} requires login credentials"));
+				Session::set('login_redirect',Application::getParam('uri'));
+				Router::redirect('/user?login');
+			} else {
+				Session::setMessage(array('alert'=>'error','icon'=>'exclamation','text'=>"This user has no access to {$this->class}"));
+				Session::set('login_redirect',Application::getParam('uri'));
+				Router::redirect('/user?noaccess');
+			}
+		}
+		if(isset($this->_data->{'@attributes'})) $this->_attributes = json_decode($this->_data->{'@attributes'});
+	}
+	
 	// Standard method: get
 	public function get($id) {
 		$this->_data = $this->_model->get($id,$this->columns);
+	}
+	
+	// Standard method: list
+	public function list() {
+		$this->_data = $this->_model->getList("*",Session::requiresListAccess());
 	}
 	
 	// Standard method: getAll
@@ -69,6 +98,84 @@ class Controller {
 			// Name provided: retrieve this object
 			$this->get($id);
 		}
+	}
+	
+	// Admin method: list
+	public function adminList($columns = "*",$filter = "1",$order = "`title`") {
+		$this->_data = $this->_model->getList($columns,$filter,$order);
+	}
+	
+	// Admin method: create
+	public function adminCreate() {
+		// Save posted data
+		if($_POST) {
+			if(isset($_FILES)) {
+				foreach($_FILES as $file=>$data) {
+					$_POST['$'.$file] = $data;
+				}
+			}
+			if($this->_model->save($_POST)) {
+				Session::setMessage("Item was created");
+			} else {
+				Session::setMessage("Failed to create item");
+			}
+			Router::redirect('/admin/'.strtolower($this->class));
+		}
+	}
+	
+	// Admin method: add
+	public function adminAdd() {
+		$this->adminCreate();
+	}
+	
+	// Admin method: edit
+	public function adminEdit() {
+		// Save posted data
+		if($_POST) {
+			if(isset($_FILES)) {
+				foreach($_FILES as $file=>$data) {
+					$_POST['$'.$file] = $data;
+				}
+			}
+			if($this->_model->save($_POST,$_POST['id'])) {
+				Session::setMessage("Item was edited");
+			} else {
+				Session::setMessage("Failed to edit item");
+			}
+			Router::redirect('/admin/'.strtolower($this->class));
+		}
+		if(isset($_GET['id'])) {
+			$this->_data = $this->_model->get($_GET['id']);
+			if(isset($this->_data->{'@attributes'})) $this->_attributes = json_decode($this->_data->{'@attributes'});
+		} else {
+			Session::setMessage("This item does not exist");
+			Router::redirect('/admin/'.strtolower($this->class));
+		}
+	}
+	
+	// Admin method: trash
+	public function adminTrash() {
+		// Remove object
+		if(isset($_GET['id'])) {
+			if($this->_model->trash($_GET['id'])) {
+				Session::setMessage("Item was trashed");
+			} else {
+				Session::setMessage("Failed to trash item");
+			}
+		} else {
+			Session::setMessage("This item does not exist");
+		}
+		Router::redirect('/admin/'.strtolower($this->class));
+	}
+	
+	// Admin method: delete
+	public function adminDelete() {
+		$this->adminTrash();
+	}
+		
+	// Admin default method: directs to admin_list
+	public function adminDefault() {
+		$this->adminList();
 	}
 	
 	// Retrieve the data supplied by the model
