@@ -1,12 +1,12 @@
 <?php
 /**
- * @application    Cubo RestAPI
+ * @application    Cubo CMS
  * @type           Protected code
  * @class          n/a
  * @description    The .autoload.php script presets constants, automates registration of classes, loads the configuration,
  *                 and finally starts the application; this script is called from index.php
- * @version        1.0.0
- * @date           2019-02-02
+ * @version        1.2.0
+ * @date           2019-02-03
  * @author         Dan Barto
  * @copyright      Copyright (C) 2017 - 2019 Papiando Riba Internet
  * @license        MIT License; see LICENSE.md

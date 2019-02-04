@@ -80,7 +80,7 @@ class View {
 		return $this->sharedPath = __ROOT__.DS.'view'.DS.'shared'.DS.(empty($this->_router->getRoute()) ? '' : $this->_router->getRoute().DS);
 	}
 	
-	public function render($data = array()) {
+	public function html($data = array()) {
 		$this->_data = $data;
 		if(isset($data->{'@attributes'})) $this->_attributes = json_decode($data->{'@attributes'});
 		if(file_exists($this->getPath()) || file_exists($this->getDefaultPath())) {
@@ -93,21 +93,6 @@ class View {
 		} else {
 			throw new \Exception("Template file '{$this->path}' does not exist");
 		}
-	}
-	
-	public function renderImage($data = array()) {
-		$this->_data = $data;
-		if(file_exists($this->getPath()) || file_exists($this->getDefaultPath())) {
-			// Write output to buffer
-			include($this->path);
-			return;
-		} else {
-			throw new \Exception("Template file '{$this->path}' does not exist");
-		}
-	}
-	
-	public function html($data = array('output'=>"No data")) {
-		return $this->render($data);
 	}
 	
 	public function apiHtml($data = array('output'=>"No data")) {

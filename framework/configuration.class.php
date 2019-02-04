@@ -95,6 +95,7 @@ class Configuration {
 		if(!isset(self::$_settings))
 			self::$_settings = new \stdClass();
 		self::$_settings->$property = $value;
+		return $value;
 	}
 	
 	public static function getDefaults() {

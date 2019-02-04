@@ -94,8 +94,8 @@ class Router {
 			if(empty($value) && empty($this->_params->method))
 				$this->_params->method = $key;
 		}
-		// Define accepted routes and preset to site
-		$routes = array(Application::get('site_route','')=>'',Application::get('admin_route','admin')=>'admin',Application::get('api_route','api')=>'api');
+		// Define accepted routes
+		$routes = Configuration::get('routes',array());
 		// Parse que rest of the query
 		if(count($path_parts)) {
 			$part = strtolower(current($path_parts));
